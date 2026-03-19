@@ -491,7 +491,7 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
       </div>
     </div>
 
-    <a class="feedback-link" href="mailto:thearjunsingh@gmail.com?subject=Recorder%20Rush">
+    <a class="feedback-link" href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#116;&#104;&#101;&#97;&#114;&#106;&#117;&#110;&#115;&#105;&#110;&#103;&#104;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;&#63;&#115;&#117;&#98;&#106;&#101;&#99;&#116;&#61;&#82;&#101;&#99;&#111;&#114;&#100;&#101;&#114;&#32;&#82;&#117;&#115;&#104;">
       Did you like this or have feedback? Let Mr. Arjun know!
     </a>
     <div class="menu-btns">
@@ -583,7 +583,7 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
   </ol>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 if(location.protocol==='file:') document.getElementById('https-warn').classList.remove('hidden');
 
 /* ─── DATA ─── */
@@ -943,4 +943,21 @@ function burst(){
 }
 function miniBurst(){
   const c=document.getElementById('confetti');
-  for(let i=0;i<14;i++){const p=document.createElement('div');p.className='cp';const sz=6+Math.random()*6;p.style.cssText=`left:${30+Math.random()*40}%;top:${10+Math.random()*20}%;width:${sz}px;height:${sz}px;background:${COLS[i%COLS.length]};border:1.5px solid #1A1A1A;animation-delay:0s;animation-duration:${(.7+Math.random()*.5).toFi
+  for(let i=0;i<14;i++){const p=document.createElement('div');p.className='cp';const sz=6+Math.random()*6;p.style.cssText=`left:${30+Math.random()*40}%;top:${10+Math.random()*20}%;width:${sz}px;height:${sz}px;background:${COLS[i%COLS.length]};border:1.5px solid #1A1A1A;animation-delay:0s;animation-duration:${(.7+Math.random()*.5).toFixed(2)}s;border-radius:${Math.random()>.4?'2px':'50%'};`;c.appendChild(p);}
+}
+
+/* ─── INIT ─── */
+// Expose all onclick-called functions on window to survive any script scope issues
+window.showScreen   = function(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
+window.goHome       = function(){ gameRunning=false; stopMic(); if(timerInterval) clearInterval(timerInterval); updateBests(); window.showScreen('home-screen'); };
+window.startGame    = startGame;
+window.setLevel     = setLevel;
+window.updateSensitivity  = updateSensitivity;
+window.updateHoldDuration = updateHoldDuration;
+
+updateBests();
+buildToggles();
+setLevel(0);
+</script>
+</body>
+</html>
