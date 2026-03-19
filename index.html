@@ -412,7 +412,15 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
   #end-screen { flex-direction:row; flex-wrap:wrap; align-content:center; gap:16px; }
   .end-card { max-width:340px; }
 }
-.end-star { font-size:clamp(2.5rem,7vw,3.5rem); color:var(--yellow); display:block; animation:starbounce .6s ease infinite alternate; }
+.star-rating { display:flex; gap:6px; justify-content:center; margin-bottom:6px; }
+.star-icon {
+  font-size:clamp(2rem,6vw,3rem); color:#ddd;
+  transition:color .3s, transform .3s;
+  display:inline-block;
+}
+.star-icon.earned { color:var(--yellow); animation:starbounce .6s ease infinite alternate; }
+.star-icon.earned:nth-child(2) { animation-delay:.15s; }
+.star-icon.earned:nth-child(3) { animation-delay:.3s; }
 @keyframes starbounce { from{transform:scale(1) rotate(-3deg)} to{transform:scale(1.1) rotate(3deg)} }
 .end-card {
   background:var(--white); border:4px solid var(--black);
@@ -572,8 +580,12 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
 <!-- ═══════ END ═══════ -->
 <div id="end-screen" class="screen">
   <div class="end-card">
-    <span class="end-star">&#9733;</span>
-    <h2>Time is Up!</h2>
+    <h2 id="end-title">Time is Up!</h2>
+    <div class="star-rating" id="star-rating">
+      <span class="star-icon" id="star-1">&#9733;</span>
+      <span class="star-icon" id="star-2">&#9733;</span>
+      <span class="star-icon" id="star-3">&#9733;</span>
+    </div>
     <span class="final-score" id="final-score">0</span>
     <span class="final-label">POINTS IN 60 SECONDS</span>
     <div class="new-best" id="new-best">NEW BEST SCORE!</div>
@@ -701,33 +713,36 @@ function buildToggles(){
 
 /* ─── SVG ─── */
 function makeStaffSVG(note){
-  // Staff: 5 lines, 16px spacing.
-  // Slot 0 = bottom line (E4), slot 1 = G4 (2nd line), 1.5 = A4, 2 = B4 (middle line), etc.
   const W=320, sp=16, sb=104;
   const sy=s=>sb-s*sp;
 
-  // Staff lines start at x=56 (clef occupies 0–55)
+  // Staff lines start at x=54
   const lines=[0,1,2,3,4].map(i=>
-    `<line x1="56" y1="${sy(i)}" x2="${W-8}" y2="${sy(i)}"
+    `<line x1="54" y1="${sy(i)}" x2="${W-8}" y2="${sy(i)}"
       stroke="#1A1A1A" stroke-width="1.8" stroke-linecap="round"/>`
   ).join('');
 
-  // Note position
   const ny=sy(note.slot), nx=210, rx=10, ry=6.5;
   const up=note.slot<=2.5, xo=up?rx-1:-(rx-1);
   const sy1=ny+(up?-ry+1:ry-1), sy2=sy1+(up?-38:38);
 
-  // TREBLE CLEF — use Noto Music font which correctly renders U+1D11E on all platforms.
-  // Noto Music is loaded via Google Fonts at the top of the page.
-  // The glyph's baseline sits at the bottom staff line (y=sb).
-  // Font-size 88px gives a clef that spans appropriately above and below the staff.
-  const clefY = sb + 2;
+  // Treble clef: Noto Music font renders 𝄞 correctly on all platforms.
+  // The glyph's internal structure positions the G-curl at roughly 67% up from
+  // the bottom of the em-square. For font-size=88:
+  //   - glyph top is ~20px above top staff line
+  //   - G-curl center lands near the G line (slot 1)
+  //   - tail descends below the bottom line
+  // Baseline is placed ABOVE the bottom staff line so the body overlaps the lines.
+  // The magic value: baseline = bottomLine + (fontSize * 0.18) pushes it up
+  // so the clef body sits ON the staff rather than below it.
+  const fontSize = 88;
+  const clefBaseline = sb + Math.round(fontSize * 0.18); // ~16px above bottom line baseline
 
-  return `<svg viewBox="0 0 ${W} ${sb+18}" xmlns="http://www.w3.org/2000/svg">
+  return `<svg viewBox="0 0 ${W} ${sb+22}" xmlns="http://www.w3.org/2000/svg">
     ${lines}
-    <text x="2" y="${clefY}"
+    <text x="2" y="${clefBaseline}"
       font-family="'Noto Music', 'Times New Roman', serif"
-      font-size="88"
+      font-size="${fontSize}"
       fill="#1A1A1A">&#x1D11E;</text>
     <ellipse cx="${nx}" cy="${ny}" rx="${rx}" ry="${ry}"
       stroke="#1A1A1A" stroke-width="2" fill="#1A1A1A"
@@ -856,22 +871,6 @@ function analyse(){
   rafId=requestAnimationFrame(analyse);
 }
 
-async function startMic(){
-  try{
-    micStream=await navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}});
-    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-    if(audioCtx.state==='suspended')await audioCtx.resume();
-    analyser=audioCtx.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0;
-    sourceNode=audioCtx.createMediaStreamSource(micStream);sourceNode.connect(analyser);
-    document.getElementById('mic-dot').className='mic-dot listening';
-    document.getElementById('mic-txt').textContent='Listening...';
-    rafId=requestAnimationFrame(analyse);
-  }catch(e){
-    console.error(e);
-    document.getElementById('mic-dot').className='mic-dot';
-    document.getElementById('mic-txt').textContent='Mic blocked — check browser permissions';
-  }
-}
 function stopMic(){
   if(rafId){cancelAnimationFrame(rafId);rafId=null;}
   try{if(sourceNode){sourceNode.disconnect();sourceNode=null;}}catch(e){}
@@ -879,14 +878,175 @@ function stopMic(){
   try{if(micStream){micStream.getTracks().forEach(t=>t.stop());micStream=null;}}catch(e){}
 }
 
-/* ─── GAME FLOW ─── */
+/* ─── SOUND ENGINE ───
+   All sounds synthesised via Web Audio API.
+   We reuse the SAME audioCtx as the mic analyser —
+   sound output uses audioCtx.destination (speakers),
+   mic input uses a MediaStreamSource (mic).
+   They share the context safely because they are
+   separate audio graph branches.
+   Sounds are triggered ONLY on the output branch
+   and never touch the analyser, so pitch detection
+   is not affected.
+─────────────────────── */
+let sfxCtx = null; // separate AudioContext just for SFX, created on first user gesture
+
+function getSfxCtx(){
+  if(!sfxCtx || sfxCtx.state==='closed'){
+    sfxCtx=new(window.AudioContext||window.webkitAudioContext)();
+  }
+  if(sfxCtx.state==='suspended') sfxCtx.resume();
+  return sfxCtx;
+}
+
+function playTone(freq, type='sine', duration=0.08, vol=0.25, delay=0){
+  try{
+    const ctx=getSfxCtx();
+    const o=ctx.createOscillator();
+    const g=ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.type=type; o.frequency.setValueAtTime(freq, ctx.currentTime+delay);
+    g.gain.setValueAtTime(0, ctx.currentTime+delay);
+    g.gain.linearRampToValueAtTime(vol, ctx.currentTime+delay+0.01);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime+delay+duration);
+    o.start(ctx.currentTime+delay);
+    o.stop(ctx.currentTime+delay+duration+0.05);
+  }catch(e){}
+}
+
+function sfxClick(){
+  // Soft low thud - button tap feedback
+  playTone(220,'sine',0.06,0.18);
+}
+
+function sfxCorrect(){
+  // Bright ascending ding  C5→E5→G5
+  playTone(523,'sine',0.12,0.3,0);
+  playTone(659,'sine',0.12,0.3,0.07);
+  playTone(784,'sine',0.18,0.35,0.14);
+}
+
+function sfxTick(){
+  // Metronome-style click
+  playTone(880,'square',0.04,0.15);
+}
+
+function sfxTimeUp(){
+  // Descending wah-wah
+  playTone(400,'sawtooth',0.18,0.3,0);
+  playTone(300,'sawtooth',0.22,0.3,0.15);
+  playTone(220,'sawtooth',0.28,0.3,0.32);
+}
+
+// Wire up all buttons to sfxClick on the document level
+document.addEventListener('pointerdown', e=>{
+  const t=e.target.closest('button,a');
+  if(t) sfxClick();
+});
+
+/* ─── MIC PRE-WARM ───
+   Request mic permission before the game starts.
+   Store the stream. Start the timer only AFTER
+   permission is granted.
+─────────────────────── */
+let micReady = false;
+let pendingStream = null; // stream obtained during pre-warm
+
+async function prewarmMic(){
+  if(micReady) return true;
+  try{
+    pendingStream = await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}
+    });
+    micReady = true;
+    return true;
+  }catch(e){
+    console.error('Mic prewarm failed',e);
+    document.getElementById('mic-dot').className='mic-dot';
+    document.getElementById('mic-txt').textContent='Mic blocked — check browser permissions';
+    return false;
+  }
+}
+
+/* ─── STAR THRESHOLDS ───
+   Scores needed for 1/2/3 stars per difficulty level.
+   Calibrated for 60 seconds:
+   Easy:   1★=3  2★=8  3★=15
+   Medium: 1★=6  2★=18 3★=36
+   Hard:   1★=10 2★=30 3★=60
+─────────────────────────── */
+const STAR_THRESH=[[3,8,15],[6,18,36],[10,30,60]];
+
+function calcStars(sc){
+  const t=STAR_THRESH[level];
+  if(sc>=t[2]) return 3;
+  if(sc>=t[1]) return 2;
+  if(sc>=t[0]) return 1;
+  return 0;
+}
+
 function startGame(){
   score=0;timeLeft=GAME_DURATION;holdStartTime=null;gameRunning=true;currentNote=null;
   noteCounts={};activeNoteNames.forEach(n=>noteCounts[n]=0);
   showScreen('game-screen');
-  updateHUD();pickNote();startMic();
-  timerInterval=setInterval(()=>{timeLeft--;updateHUD();if(timeLeft<=0){clearInterval(timerInterval);endGame();}},1000);
+  updateHUD();pickNote();
+
+  // Show "waiting for mic" state if not ready
+  if(!micReady){
+    document.getElementById('mic-dot').className='mic-dot';
+    document.getElementById('mic-txt').textContent='Waiting for microphone...';
+    // Start mic (request permission) and ONLY start timer after permission granted
+    startMicThenTimer();
+  } else {
+    // Already have permission — reuse pending stream
+    startMicWithStream(pendingStream);
+    pendingStream = null;
+    micReady = false; // will re-request next game
+    beginTimer();
+  }
 }
+
+async function startMicThenTimer(){
+  try{
+    const stream = pendingStream || await navigator.mediaDevices.getUserMedia({
+      audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}
+    });
+    pendingStream = null;
+    micReady = false;
+    startMicWithStream(stream);
+    beginTimer();
+  }catch(e){
+    console.error(e);
+    document.getElementById('mic-dot').className='mic-dot';
+    document.getElementById('mic-txt').textContent='Mic blocked — check browser permissions';
+    // Still start timer so game isn't stuck, just without mic
+    beginTimer();
+  }
+}
+
+function startMicWithStream(stream){
+  try{
+    if(!stream) return;
+    audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==='suspended') audioCtx.resume();
+    analyser=audioCtx.createAnalyser();analyser.fftSize=4096;analyser.smoothingTimeConstant=0;
+    sourceNode=audioCtx.createMediaStreamSource(stream);sourceNode.connect(analyser);
+    micStream=stream;
+    document.getElementById('mic-dot').className='mic-dot listening';
+    document.getElementById('mic-txt').textContent='Listening...';
+    rafId=requestAnimationFrame(analyse);
+  }catch(e){ console.error(e); }
+}
+
+function beginTimer(){
+  timerInterval=setInterval(()=>{
+    timeLeft--;
+    updateHUD();
+    if(timeLeft<=5 && timeLeft>0) sfxTick();
+    if(timeLeft<=0){clearInterval(timerInterval);sfxTimeUp();endGame();}
+  },1000);
+}
+
 function updateHUD(){
   const tv=document.getElementById('timer-val');
   tv.textContent=timeLeft;tv.className='hud-val'+(timeLeft<=10?' urgent':'');
@@ -895,6 +1055,7 @@ function updateHUD(){
   const bar=document.getElementById('timer-bar');
   bar.style.width=pct+'%';bar.className='hud-bar'+(pct<=20?' low':'');
 }
+
 function onCorrect(){
   const pts=calcPts();score+=pts;
   if(noteCounts[currentNote.name]!==undefined)noteCounts[currentNote.name]++;
@@ -905,19 +1066,33 @@ function onCorrect(){
   const fl=document.getElementById('result-flash');
   document.getElementById('flash-txt').textContent='+'+pts;
   fl.classList.add('show');setTimeout(()=>fl.classList.remove('show'),420);
+  sfxCorrect();
   miniBurst();
   setTimeout(()=>{if(gameRunning)pickNote();},350);
 }
+
 function endGame(){
   gameRunning=false;stopMic();
   const isNew=score>bestScore;
   if(isNew){bestScore=score;localStorage.setItem('rrBest',bestScore);}
   updateBests();
+
+  // Stars
+  const stars=calcStars(score);
+  [1,2,3].forEach(i=>{
+    const el=document.getElementById('star-'+i);
+    el.className=i<=stars?'star-icon earned':'star-icon';
+  });
+
+  // Title changes based on stars
+  const titles=['Keep Practicing!','Good job!','Nice work!','Amazing!'];
+  document.getElementById('end-title').textContent=titles[stars];
+
   document.getElementById('final-score').textContent=score;
   document.getElementById('new-best').style.display=isNew?'block':'none';
   document.getElementById('end-breakdown').textContent=Object.entries(noteCounts).map(([n,c])=>`${n}: ${c}`).join('  ·  ');
   showScreen('end-screen');
-  if(score>0){burst();setTimeout(burst,600);}
+  if(stars>0){burst();if(stars>=2)setTimeout(burst,600);}
   if(isNew)setTimeout(burst,1200);
 }
 
@@ -938,14 +1113,17 @@ function miniBurst(){
 window.showScreen   = function(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); };
 window.goHome       = function(){ gameRunning=false; stopMic(); if(timerInterval) clearInterval(timerInterval); updateBests(); window.showScreen('home-screen'); };
 window.quitGame     = function(){
-  // End the game immediately, take the current score, go to end screen
   if(timerInterval) clearInterval(timerInterval);
+  sfxTimeUp();
   endGame();
 };
 window.startGame    = startGame;
 window.setLevel     = setLevel;
 window.updateSensitivity  = updateSensitivity;
 window.updateHoldDuration = updateHoldDuration;
+
+// Pre-warm mic on page load so permission dialog appears before first game tap
+prewarmMic();
 
 updateBests();
 buildToggles();
