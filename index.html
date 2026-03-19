@@ -186,6 +186,17 @@ html, body {
 .slider-hint { font-size:clamp(.6rem,1.4vw,.72rem); color:#888; }
 input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:2px 0; }
 
+/* Octave selector */
+.octave-tabs { display:flex; border:3px solid var(--black); border-radius:5px; overflow:hidden; margin-top:4px; }
+.octave-tab {
+  font-family:'Chewy',sans-serif; font-size:clamp(.75rem,1.8vw,.9rem);
+  padding:6px 10px; border:none; border-right:2px solid var(--black);
+  cursor:pointer; background:var(--white); color:var(--black); flex:1;
+  -webkit-tap-highlight-color:transparent;
+}
+.octave-tab:last-child { border-right:none; }
+.octave-tab.active { background:var(--green); color:var(--white); }
+
 /* ═══════════════════════════════════════
    GAME SCREEN — THE BIG REDESIGN
 
@@ -476,7 +487,7 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
       <button class="btn btn-red"   onclick="startGame()">Start Game</button>
       <button class="btn btn-white" onclick="showScreen('menu-screen')">Settings</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.5</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.6</div>
   </div>
 </div>
 
@@ -513,6 +524,15 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
         <input type="range" id="hold-slider" min="5" max="50" value="20" oninput="updateHoldDuration(this.value)">
         <div class="slider-hint">How long to hold the note before it scores</div>
       </div>
+      <div class="slider-row" style="margin-bottom:0">
+        <div class="slider-label">Octave &nbsp;<span class="slider-val" id="octave-val">High (5)</span></div>
+        <div class="octave-tabs">
+          <button class="octave-tab" data-shift="-1" onclick="updateOctave(-1)">Low (3)</button>
+          <button class="octave-tab" data-shift="0"  onclick="updateOctave(0)">Standard (4)</button>
+          <button class="octave-tab active" data-shift="1" onclick="updateOctave(1)">High (5)</button>
+        </div>
+        <div class="slider-hint">Most recorders playing G–B use High (5)</div>
+      </div>
     </div>
 
     <a class="feedback-link" href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#116;&#104;&#101;&#97;&#114;&#106;&#117;&#110;&#115;&#105;&#110;&#103;&#104;&#64;&#103;&#109;&#97;&#105;&#108;&#46;&#99;&#111;&#109;&#63;&#115;&#117;&#98;&#106;&#101;&#99;&#116;&#61;&#82;&#101;&#99;&#111;&#114;&#100;&#101;&#114;&#32;&#82;&#117;&#115;&#104;">
@@ -521,7 +541,7 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
     <div class="menu-btns">
       <button class="btn btn-red" onclick="showScreen('home-screen')">Done</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.5</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.6</div>
   </div>
 </div>
 
@@ -597,7 +617,7 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
       <button class="btn btn-red"   onclick="startGame()">Play Again</button>
       <button class="btn btn-white" onclick="goHome()">Menu</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.5</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.6</div>
   </div>
 </div>
 
@@ -632,6 +652,7 @@ const GAME_DURATION=60;
 // Hold duration and sensitivity are user-adjustable (set from settings sliders)
 let holdDurationMs = 2000; // default 2 seconds
 let noteTolerance  = 22;   // default Hz tolerance (overridden per-note but this is the base)
+let octaveShift    = 1;    // 0=standard(4), 1=high(5), -1=low(3) — most recorders use High
 
 // Track hold with real timestamps, not frame count
 let holdStartTime = null;
@@ -693,6 +714,15 @@ function updateHoldDuration(v){
   // slider 5–50 maps to 0.5s–5.0s
   holdDurationMs = v * 100;
   document.getElementById('hold-val').textContent = (holdDurationMs/1000).toFixed(1)+'s';
+}
+
+const OCTAVE_LABELS = {'-1':'Low (3)', '0':'Standard (4)', '1':'High (5)'};
+function updateOctave(shift){
+  octaveShift = shift;
+  document.querySelectorAll('.octave-tab').forEach(t =>
+    t.classList.toggle('active', +t.dataset.shift === shift)
+  );
+  document.getElementById('octave-val').textContent = OCTAVE_LABELS[String(shift)];
 }
 
 function buildToggles(){
@@ -849,9 +879,11 @@ function analyse(){
 
   if(f>0){
     const nm=f2n(f);
-    // Scale note tolerance by user sensitivity setting (noteTolerance is the base multiplier)
-    const scaledTol = currentNote.tol * (noteTolerance / 22);
-    const diff=Math.abs(f-currentNote.freq), match=diff<scaledTol;
+    // Scale tolerance and target frequency by octave setting
+    const octaveMult = Math.pow(2, octaveShift);
+    const scaledTol = currentNote.tol * (noteTolerance / 22) * octaveMult;
+    const targetFreq = currentNote.freq * octaveMult;
+    const diff=Math.abs(f-targetFreq), match=diff<scaledTol;
     dot.className='mic-dot '+(match?'correct':'heard');
     txt.innerHTML=`Hearing: <span class="det ${match?'ok':'bad'}">${nm||'?'}</span>`;
     if(match){
@@ -1121,6 +1153,7 @@ window.startGame    = startGame;
 window.setLevel     = setLevel;
 window.updateSensitivity  = updateSensitivity;
 window.updateHoldDuration = updateHoldDuration;
+window.updateOctave       = updateOctave;
 
 // Pre-warm mic on page load so permission dialog appears before first game tap
 prewarmMic();
