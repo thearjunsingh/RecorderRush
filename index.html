@@ -156,6 +156,13 @@ html, body {
 .menu-diff { width:100%; max-width:480px; z-index:1; }
 .menu-btns { display:flex; gap:10px; justify-content:center; z-index:1; }
 
+/* Sliders */
+.slider-row { display:flex; flex-direction:column; gap:4px; margin-bottom:8px; }
+.slider-label { font-family:'Chewy',sans-serif; font-size:clamp(.85rem,2vw,1rem); display:flex; align-items:center; flex-wrap:wrap; gap:4px; }
+.slider-val { background:var(--blue); color:var(--white); border-radius:4px; padding:1px 8px; font-family:'Chewy',sans-serif; font-size:clamp(.75rem,1.8vw,.88rem); }
+.slider-hint { font-size:clamp(.6rem,1.4vw,.72rem); color:#888; }
+input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:2px 0; }
+
 /* ═══════════════════════════════════════
    GAME SCREEN — THE BIG REDESIGN
 
@@ -263,25 +270,13 @@ html, body {
   display:flex; flex-direction:row;
   align-items:flex-start; gap:14px;
 }
-.p-thumb {
-  width:clamp(18px,4.5vw,28px); height:clamp(18px,4.5vw,28px);
-  border-radius:50%; border:3px solid var(--black); background:var(--white);
-  margin-top:5px; flex-shrink:0; box-shadow:2px 2px 0 var(--black);
-}
-.p-thumb.filled { background:var(--black); }
-.p-hole-column {
-  display:flex; flex-direction:column;
-  border:3px solid var(--black); border-radius:10px;
-  padding: clamp(6px,1.2vh,10px) clamp(8px,1.5vw,14px);
-  gap: clamp(4px,.9vh,8px);
-  background:var(--white); box-shadow:3px 3px 0 var(--black);
-}
-.p-hole-gap { height:clamp(6px,1.2vh,10px); }
-.p-hole {
-  width:clamp(18px,4.5vw,28px); height:clamp(18px,4.5vw,28px);
-  border-radius:50%; border:3px solid var(--black); background:var(--white);
-}
+/* Ghost silhouette: all holes shown as outlines, filled ones solid */
+.p-hole { width:clamp(18px,4.5vw,28px); height:clamp(18px,4.5vw,28px); border-radius:50%; border:3px solid var(--black); background:rgba(0,0,0,0.08); }
 .p-hole.filled { background:var(--black); }
+.p-thumb { width:clamp(18px,4.5vw,28px); height:clamp(18px,4.5vw,28px); border-radius:50%; border:3px solid var(--black); background:rgba(0,0,0,0.08); margin-top:5px; flex-shrink:0; box-shadow:2px 2px 0 var(--black); }
+.p-thumb.filled { background:var(--black); }
+.p-hole-column { display:flex; flex-direction:column; border:3px solid var(--black); border-radius:10px; padding:clamp(6px,1.2vh,10px) clamp(8px,1.5vw,14px); gap:clamp(4px,.9vh,8px); background:var(--white); box-shadow:3px 3px 0 var(--black); }
+.p-hole-gap { height:clamp(6px,1.2vh,10px); }
 .p-hint {
   font-family:'Chewy',sans-serif;
   font-size:clamp(.85rem,2.2vw,1.1rem); color:var(--blue);
@@ -457,11 +452,11 @@ html, body {
       <button class="btn btn-red"   onclick="startGame()">Start Game</button>
       <button class="btn btn-white" onclick="showScreen('menu-screen')">Settings</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.4</div>
   </div>
 </div>
 
-<!-- ═══════ SETTINGS ═══════ -->
+
 <div id="menu-screen" class="screen">
   <div class="menu-left">
     <div class="menu-title">Settings</div>
@@ -481,13 +476,28 @@ html, body {
       </div>
       <div class="level-pill" id="ld-menu"></div>
     </div>
+
+    <div class="menu-card">
+      <h3>Tuning</h3>
+      <div class="slider-row">
+        <div class="slider-label">Note Sensitivity &nbsp;<span class="slider-val" id="sens-val">Medium</span></div>
+        <input type="range" id="sens-slider" min="1" max="5" value="3" oninput="updateSensitivity(this.value)">
+        <div class="slider-hint">Higher = more forgiving pitch matching</div>
+      </div>
+      <div class="slider-row">
+        <div class="slider-label">Hold Duration &nbsp;<span class="slider-val" id="hold-val">2.0s</span></div>
+        <input type="range" id="hold-slider" min="5" max="50" value="20" oninput="updateHoldDuration(this.value)">
+        <div class="slider-hint">How long to hold the note before it scores</div>
+      </div>
+    </div>
+
     <a class="feedback-link" href="mailto:thearjunsingh@gmail.com?subject=Recorder%20Rush">
       Did you like this or have feedback? Let Mr. Arjun know!
     </a>
     <div class="menu-btns">
       <button class="btn btn-red" onclick="showScreen('home-screen')">Done</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.4</div>
   </div>
 </div>
 
@@ -558,7 +568,7 @@ html, body {
       <button class="btn btn-red"   onclick="startGame()">Play Again</button>
       <button class="btn btn-white" onclick="goHome()">Menu</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.4</div>
   </div>
 </div>
 
@@ -573,7 +583,7 @@ html, body {
   </ol>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 if(location.protocol==='file:') document.getElementById('https-warn').classList.remove('hidden');
 
 /* ─── DATA ─── */
@@ -585,12 +595,18 @@ const ALL_NOTES=[
   {name:'D',freq:587.33,tol:26,slot:3,   thumb:0,lh:[1,0,0],rh:[0,0,0,0],hint:'LH index only, no thumb'}
 ];
 const LEVEL_DESC=['Staff + Note Name + Fingering','Staff + Note Name only','Staff only'];
-const GAME_DURATION=60, HOLD_FRAMES=120;
+const GAME_DURATION=60;
+// Hold duration and sensitivity are user-adjustable (set from settings sliders)
+let holdDurationMs = 2000; // default 2 seconds
+let noteTolerance  = 22;   // default Hz tolerance (overridden per-note but this is the base)
+
+// Track hold with real timestamps, not frame count
+let holdStartTime = null;
 
 /* ─── STATE ─── */
 let level=0,score=0,bestScore=parseInt(localStorage.getItem('rrBest')||'0');
 let noteCounts={},timeLeft=GAME_DURATION,timerInterval=null;
-let correctHeld=0,currentNote=null,gameRunning=false;
+let currentNote=null,gameRunning=false;
 let activeNoteNames=['G','A','B'];
 let audioCtx=null,analyser=null,sourceNode=null,micStream=null,rafId=null;
 
@@ -628,6 +644,18 @@ function updateBests(){
 }
 
 /* ─── NOTE TOGGLES ─── */
+/* ─── SENSITIVITY & HOLD DURATION ─── */
+const SENS_LABELS=['Very Tight','Tight','Medium','Loose','Very Loose'];
+function updateSensitivity(v){
+  noteTolerance = [10, 16, 22, 30, 40][v-1];
+  document.getElementById('sens-val').textContent = SENS_LABELS[v-1];
+}
+function updateHoldDuration(v){
+  // slider 5–50 maps to 0.5s–5.0s
+  holdDurationMs = v * 100;
+  document.getElementById('hold-val').textContent = (holdDurationMs/1000).toFixed(1)+'s';
+}
+
 function buildToggles(){
   const row=document.getElementById('note-toggle-row'); row.innerHTML='';
   ALL_NOTES.forEach(n=>{
@@ -646,16 +674,80 @@ function buildToggles(){
 
 /* ─── SVG ─── */
 function makeStaffSVG(note){
-  const W=320,sp=15,sb=108,sy=s=>sb-s*sp;
-  const lines=[0,1,2,3,4].map(i=>`<line x1="68" y1="${sy(i)}" x2="${W-10}" y2="${sy(i)}" stroke="#1A1A1A" stroke-width="2" stroke-linecap="round"/>`).join('');
-  const ny=sy(note.slot),nx=220,rx=11,ry=7;
-  const up=note.slot<=2.5,xo=up?rx-1:-(rx-1);
-  const sy1=ny+(up?-ry+1:ry-1),sy2=sy1+(up?-40:40);
-  return `<svg viewBox="0 0 ${W} ${sb+22}" xmlns="http://www.w3.org/2000/svg">
+  // Staff geometry
+  // 5 lines, spacing sp=16px. Bottom line (E4) at y=sb, top line at y=sb-4*sp.
+  // Slot system: slot 0=bottom line(E4), 1=G4(2nd line), 1.5=A4(space), 2=B4(middle), etc.
+  const W=320, sp=16, sb=102;
+  const sy=s=>sb-s*sp;
+  const staffTop=sy(4), staffBot=sb;
+
+  // Staff lines start at x=58 to leave room for clef
+  const lines=[0,1,2,3,4].map(i=>
+    `<line x1="58" y1="${sy(i)}" x2="${W-8}" y2="${sy(i)}" stroke="#1A1A1A" stroke-width="1.8" stroke-linecap="round"/>`
+  ).join('');
+
+  // Note
+  const ny=sy(note.slot), nx=210, rx=10, ry=6.5;
+  const up=note.slot<=2.5, xo=up?rx-1:-(rx-1);
+  const sy1=ny+(up?-ry+1:ry-1), sy2=sy1+(up?-38:38);
+
+  // Treble clef drawn as SVG path.
+  // The clef must: start near bottom line, curl around G line (slot 1 = sy(1)),
+  // extend up above top staff line, curl tail below bottom line.
+  // We draw it in a local coordinate system then transform it into place.
+  //
+  // Key anchor points:
+  //   G-line y = sy(1) = sb - sp        (the curl wraps here)
+  //   bottom staff line y = sb
+  //   top staff line y = sb - 4*sp
+  //
+  // We use a hand-crafted path scaled so the G-curl center lands on sy(1).
+  // Path drawn with origin at G-line center, then translated.
+  const gY = sy(1); // G line = where curl center goes
+  const clefX = 8;  // left edge of clef
+
+  // Scale: staff height = 4*sp. Clef spans from ~1.4 staff heights above top to 0.6 below bottom.
+  const staffH = 4*sp;
+  const clefScale = staffH / 52; // 52 = canonical staff height units in our path
+
+  // Canonical treble clef path (units where staff height = 52, G-curl at y=0)
+  // x: 0-28 wide, y: -74 (top) to +36 (tail bottom), G-curl center at y=0
+  const clefPath = `
+    M 14 36
+    C 14 28, 8 22, 8 14
+    C 8 2, 18 -4, 18 -4
+    C 6 -12, 2 -22, 2 -32
+    C 2 -48, 10 -58, 18 -62
+    C 26 -66, 34 -62, 34 -54
+    C 34 -44, 26 -36, 18 -32
+    C 24 -28, 30 -20, 30 -10
+    C 30 4, 22 12, 14 16
+    C 8 18, 4 16, 4 10
+    C 4 4, 8 0, 14 0
+    C 20 0, 24 4, 24 10
+    C 24 16, 20 20, 14 20
+    C 9 20, 6 16, 6 12
+  `;
+
+  // Transform: scale then translate so G-curl (y=0 in path) lands at gY
+  const tx = clefX;
+  const ty = gY;
+  const sc = clefScale;
+
+  return `<svg viewBox="0 0 ${W} ${sb+18}" xmlns="http://www.w3.org/2000/svg">
     ${lines}
-    <text x="6" y="${sb+8}" font-family="'Times New Roman',Times,serif" font-size="88" fill="#1A1A1A">&#119070;</text>
-    <ellipse cx="${nx}" cy="${ny}" rx="${rx}" ry="${ry}" stroke="#1A1A1A" stroke-width="2.2" fill="#1A1A1A" transform="rotate(-16,${nx},${ny})"/>
-    <line x1="${nx+xo}" y1="${sy1}" x2="${nx+xo}" y2="${sy2}" stroke="#1A1A1A" stroke-width="2.3" stroke-linecap="round"/>
+    <!-- Treble clef: G-curl anchored to G line (slot 1) -->
+    <g transform="translate(${tx},${ty}) scale(${sc.toFixed(3)})">
+      <path d="${clefPath}" fill="none" stroke="#1A1A1A"
+        stroke-width="${(2.8/sc).toFixed(2)}" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <!-- Quarter note head (filled) -->
+    <ellipse cx="${nx}" cy="${ny}" rx="${rx}" ry="${ry}"
+      stroke="#1A1A1A" stroke-width="2" fill="#1A1A1A"
+      transform="rotate(-16,${nx},${ny})"/>
+    <!-- Stem -->
+    <line x1="${nx+xo}" y1="${sy1}" x2="${nx+xo}" y2="${sy2}"
+      stroke="#1A1A1A" stroke-width="2.2" stroke-linecap="round"/>
   </svg>`;
 }
 
@@ -693,29 +785,32 @@ function renderCard(){
   }
 
   // landscape
-  const lnn=document.getElementById('ls-note-name');
-  lnn.textContent=n.name; lnn.style.display=level===2?'none':'';
+  // Left panel gets note name + fingering. Right panel gets ONLY the staff.
   document.getElementById('ls-staff').innerHTML=makeStaffSVG(n);
+  // Hide the static ls-note-name in right panel entirely - left panel handles it
+  const lnn=document.getElementById('ls-note-name');
+  lnn.style.display='none';
+
   const ll=document.getElementById('ls-left'); ll.innerHTML='';
-  // Always show note name in left panel in landscape for context
   if(level===0){
-    const nh=document.createElement('div');nh.className='ls-note-name';nh.textContent=n.name;
-    nh.style.display=level===2?'none':'';
-    ll.appendChild(nh);
+    // Left: note name + fingering + hint
+    if(level!==2){
+      const nh=document.createElement('div');nh.className='ls-note-name';nh.textContent=n.name;ll.appendChild(nh);
+    }
     ll.appendChild(makeFingerDOM(n));
     const h=document.createElement('div');h.className='ls-hint';h.textContent=n.hint;ll.appendChild(h);
   } else if(level===1){
-    // just note name, big, in the left panel for orientation
+    // Left: note name only (big)
     const nh=document.createElement('div');nh.className='ls-note-name';nh.textContent=n.name;ll.appendChild(nh);
   }
-  // level 2: left panel empty (just yellow background strip with fingering shape hint)
+  // level 2: left panel is empty
 
   // reset
   const gs=document.getElementById('game-screen');
   gs.className='screen active';
   document.getElementById('hold-fill').style.width='0%';
   document.getElementById('pts-val').textContent=calcPts();
-  correctHeld=0;
+  holdStartTime=null;
 }
 
 function pickNote(){
@@ -751,16 +846,24 @@ function analyse(){
   const hf=document.getElementById('hold-fill');
 
   if(f>0){
-    const nm=f2n(f),diff=Math.abs(f-currentNote.freq),match=diff<currentNote.tol;
+    const nm=f2n(f);
+    // Scale note tolerance by user sensitivity setting (noteTolerance is the base multiplier)
+    const scaledTol = currentNote.tol * (noteTolerance / 22);
+    const diff=Math.abs(f-currentNote.freq), match=diff<scaledTol;
     dot.className='mic-dot '+(match?'correct':'heard');
     txt.innerHTML=`Hearing: <span class="det ${match?'ok':'bad'}">${nm||'?'}</span>`;
     if(match){
-      correctHeld++;
-      hf.style.width=Math.min(100,(correctHeld/HOLD_FRAMES)*100)+'%';
-      if(correctHeld>=HOLD_FRAMES){correctHeld=0;hf.style.width='0%';onCorrect();}
-    } else {correctHeld=0;hf.style.width='0%';}
+      if(!holdStartTime) holdStartTime=performance.now();
+      const elapsed=performance.now()-holdStartTime;
+      const pct=Math.min(100,(elapsed/holdDurationMs)*100);
+      hf.style.width=pct+'%';
+      if(elapsed>=holdDurationMs){holdStartTime=null;hf.style.width='0%';onCorrect();}
+    } else {
+      holdStartTime=null;
+      hf.style.width='0%';
+    }
   } else {
-    correctHeld=0;hf.style.width='0%';
+    holdStartTime=null;hf.style.width='0%';
     dot.className='mic-dot listening';txt.textContent='Listening...';
   }
   rafId=requestAnimationFrame(analyse);
@@ -791,7 +894,7 @@ function stopMic(){
 
 /* ─── GAME FLOW ─── */
 function startGame(){
-  score=0;timeLeft=GAME_DURATION;correctHeld=0;gameRunning=true;currentNote=null;
+  score=0;timeLeft=GAME_DURATION;holdStartTime=null;gameRunning=true;currentNote=null;
   noteCounts={};activeNoteNames.forEach(n=>noteCounts[n]=0);
   showScreen('game-screen');
   updateHUD();pickNote();startMic();
@@ -840,11 +943,4 @@ function burst(){
 }
 function miniBurst(){
   const c=document.getElementById('confetti');
-  for(let i=0;i<14;i++){const p=document.createElement('div');p.className='cp';const sz=6+Math.random()*6;p.style.cssText=`left:${30+Math.random()*40}%;top:${10+Math.random()*20}%;width:${sz}px;height:${sz}px;background:${COLS[i%COLS.length]};border:1.5px solid #1A1A1A;animation-delay:0s;animation-duration:${(.7+Math.random()*.5).toFixed(2)}s;border-radius:${Math.random()>.4?'2px':'50%'};`;c.appendChild(p);}
-}
-
-/* ─── INIT ─── */
-updateBests();buildToggles();setLevel(0);
-</script>
-</body>
-</html>
+  for(let i=0;i<14;i++){const p=document.createElement('div');p.className='cp';const sz=6+Math.random()*6;p.style.cssText=`left:${30+Math.random()*40}%;top:${10+Math.random()*20}%;width:${sz}px;height:${sz}px;background:${COLS[i%COLS.length]};border:1.5px solid #1A1A1A;animation-delay:0s;animation-duration:${(.7+Math.random()*.5).toFi
