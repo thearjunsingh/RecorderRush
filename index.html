@@ -186,7 +186,10 @@ html, body {
 .slider-hint { font-size:clamp(.6rem,1.4vw,.72rem); color:#888; }
 input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:2px 0; }
 
-/* Octave selector */
+/* Tuning display (read-only, set by difficulty) */
+.tuning-display { display:flex; flex-direction:column; gap:6px; }
+.tuning-row { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+.tuning-label { font-family:'Chewy',sans-serif; font-size:clamp(.85rem,2vw,1rem); }
 .octave-tabs { display:flex; border:3px solid var(--black); border-radius:5px; overflow:hidden; margin-top:4px; }
 .octave-tab {
   font-family:'Chewy',sans-serif; font-size:clamp(.75rem,1.8vw,.9rem);
@@ -487,7 +490,7 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
       <button class="btn btn-red"   onclick="startGame()">Start Game</button>
       <button class="btn btn-white" onclick="showScreen('menu-screen')">Settings</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.6</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.7</div>
   </div>
 </div>
 
@@ -514,17 +517,18 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
 
     <div class="menu-card">
       <h3>Tuning</h3>
-      <div class="slider-row">
-        <div class="slider-label">Note Sensitivity &nbsp;<span class="slider-val" id="sens-val">Medium</span></div>
-        <input type="range" id="sens-slider" min="1" max="5" value="3" oninput="updateSensitivity(this.value)">
-        <div class="slider-hint">Higher = more forgiving pitch matching</div>
+      <div class="tuning-display">
+        <div class="tuning-row">
+          <span class="tuning-label">Sensitivity</span>
+          <span class="slider-val" id="sens-val">Loose</span>
+        </div>
+        <div class="tuning-row">
+          <span class="tuning-label">Hold Duration</span>
+          <span class="slider-val" id="hold-val">0.5s</span>
+        </div>
+        <div class="slider-hint" style="margin-top:4px">Set automatically by difficulty level</div>
       </div>
-      <div class="slider-row">
-        <div class="slider-label">Hold Duration &nbsp;<span class="slider-val" id="hold-val">2.0s</span></div>
-        <input type="range" id="hold-slider" min="5" max="50" value="20" oninput="updateHoldDuration(this.value)">
-        <div class="slider-hint">How long to hold the note before it scores</div>
-      </div>
-      <div class="slider-row" style="margin-bottom:0">
+      <div class="slider-row" style="margin-bottom:0;margin-top:10px">
         <div class="slider-label">Octave &nbsp;<span class="slider-val" id="octave-val">High (5)</span></div>
         <div class="octave-tabs">
           <button class="octave-tab" data-shift="-1" onclick="updateOctave(-1)">Low (3)</button>
@@ -541,7 +545,7 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
     <div class="menu-btns">
       <button class="btn btn-red" onclick="showScreen('home-screen')">Done</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.6</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.7</div>
   </div>
 </div>
 
@@ -617,7 +621,7 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
       <button class="btn btn-red"   onclick="startGame()">Play Again</button>
       <button class="btn btn-white" onclick="goHome()">Menu</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.6</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.7</div>
   </div>
 </div>
 
@@ -641,7 +645,8 @@ const ALL_NOTES=[
   {name:'A',freq:440.0, tol:22,slot:1.5, thumb:1,lh:[1,1,0],rh:[0,0,0,0],hint:'Thumb + LH index + middle'},
   {name:'B',freq:493.88,tol:24,slot:2,   thumb:1,lh:[1,0,0],rh:[0,0,0,0],hint:'Thumb + LH index only'},
   {name:'C',freq:523.25,tol:24,slot:2.5, thumb:1,lh:[1,0,0],rh:[1,0,0,0],hint:'Thumb + LH index + RH index'},
-  {name:'D',freq:587.33,tol:26,slot:3,   thumb:0,lh:[1,0,0],rh:[0,0,0,0],hint:'LH index only, no thumb'}
+  {name:'D',freq:587.33,tol:26,slot:3,   thumb:0,lh:[1,0,0],rh:[0,0,0,0],hint:'LH index only, no thumb'},
+  {name:'E',freq:659.25,tol:28,slot:3.5, thumb:0,lh:[0,0,0],rh:[0,0,0,0],hint:'All holes open, no thumb'}
 ];
 const LEVEL_DESC=[
   'Easy — Staff + Note Name + Fingering chart',
@@ -649,13 +654,19 @@ const LEVEL_DESC=[
   'Hard — Staff only, no hints'
 ];
 const GAME_DURATION=60;
-// Hold duration and sensitivity are user-adjustable (set from settings sliders)
-let holdDurationMs = 2000; // default 2 seconds
-let noteTolerance  = 22;   // default Hz tolerance (overridden per-note but this is the base)
-let octaveShift    = 1;    // 0=standard(4), 1=high(5), -1=low(3) — most recorders use High
+let holdDurationMs = 500;  // default 0.5s — set by difficulty
+let noteTolerance  = 40;   // default Loose — set by difficulty
+let octaveShift    = 1;    // 0=standard(4), 1=high(5), -1=low(3)
 
 // Track hold with real timestamps, not frame count
 let holdStartTime = null;
+
+// Difficulty presets: [noteTolerance, holdDurationMs]
+const LEVEL_TUNING = [
+  [40, 500],   // Easy   — Loose,  0.5s hold
+  [22, 1000],  // Medium — Medium, 1.0s hold
+  [12, 1000],  // Hard   — Tight,  1.0s hold
+];
 
 /* ─── STATE ─── */
 let level=0,score=0,bestScore=parseInt(localStorage.getItem('rrBest')||'0');
@@ -682,14 +693,20 @@ function goHome(){
 function calcPts(){ const n=activeNoteNames.length; return Math.max(1, n*(n-1)/2); }
 
 const LEVEL_NAMES=['Easy','Medium','Hard'];
+const SENS_DISPLAY=['Loose','Medium','Tight'];
 function setLevel(l){
   level=l;
   document.querySelectorAll('.diff-tab').forEach(t=>t.classList.toggle('active',+t.dataset.level===l));
   const d=LEVEL_DESC[l];
   const lm=document.getElementById('ld-menu'); if(lm) lm.textContent=d;
-  // Update home badge to show current level name
+  // Apply difficulty-linked tuning
+  [noteTolerance, holdDurationMs] = LEVEL_TUNING[l];
+  // Update home badge
   const hb=document.getElementById('home-level-badge');
   if(hb) hb.innerHTML=`Level: <span>${LEVEL_NAMES[l]}</span>`;
+  // Sync the read-only tuning display in settings
+  const sv=document.getElementById('sens-val'); if(sv) sv.textContent=SENS_DISPLAY[l];
+  const hv=document.getElementById('hold-val'); if(hv) hv.textContent=(holdDurationMs/1000).toFixed(1)+'s';
   const pv=document.getElementById('pts-val'); if(pv) pv.textContent=calcPts();
   updatePtsPreview();
 }
@@ -704,17 +721,6 @@ function updateBests(){
 }
 
 /* ─── NOTE TOGGLES ─── */
-/* ─── SENSITIVITY & HOLD DURATION ─── */
-const SENS_LABELS=['Very Tight','Tight','Medium','Loose','Very Loose'];
-function updateSensitivity(v){
-  noteTolerance = [10, 16, 22, 30, 40][v-1];
-  document.getElementById('sens-val').textContent = SENS_LABELS[v-1];
-}
-function updateHoldDuration(v){
-  // slider 5–50 maps to 0.5s–5.0s
-  holdDurationMs = v * 100;
-  document.getElementById('hold-val').textContent = (holdDurationMs/1000).toFixed(1)+'s';
-}
 
 const OCTAVE_LABELS = {'-1':'Low (3)', '0':'Standard (4)', '1':'High (5)'};
 function updateOctave(shift){
@@ -1151,8 +1157,6 @@ window.quitGame     = function(){
 };
 window.startGame    = startGame;
 window.setLevel     = setLevel;
-window.updateSensitivity  = updateSensitivity;
-window.updateHoldDuration = updateHoldDuration;
 window.updateOctave       = updateOctave;
 
 // Pre-warm mic on page load so permission dialog appears before first game tap
