@@ -490,7 +490,7 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
       <button class="btn btn-red"   onclick="startGame()">Start Game</button>
       <button class="btn btn-white" onclick="showScreen('menu-screen')">Settings</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.7</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v2.1</div>
   </div>
 </div>
 
@@ -545,7 +545,7 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
     <div class="menu-btns">
       <button class="btn btn-red" onclick="showScreen('home-screen')">Done</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.7</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v2.1</div>
   </div>
 </div>
 
@@ -621,7 +621,7 @@ input[type=range] { width:100%; accent-color:var(--red); cursor:pointer; margin:
       <button class="btn btn-red"   onclick="startGame()">Play Again</button>
       <button class="btn btn-white" onclick="goHome()">Menu</button>
     </div>
-    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v1.7</div>
+    <div class="footer-txt">Developed by Claude and Mr. Arjun &nbsp;·&nbsp; v2.1</div>
   </div>
 </div>
 
@@ -644,9 +644,9 @@ const ALL_NOTES=[
   {name:'G',freq:392.0, tol:22,slot:1,   thumb:1,lh:[1,1,1],rh:[0,0,0,0],hint:'Thumb + all 3 left fingers'},
   {name:'A',freq:440.0, tol:22,slot:1.5, thumb:1,lh:[1,1,0],rh:[0,0,0,0],hint:'Thumb + LH index + middle'},
   {name:'B',freq:493.88,tol:24,slot:2,   thumb:1,lh:[1,0,0],rh:[0,0,0,0],hint:'Thumb + LH index only'},
-  {name:'C',freq:523.25,tol:24,slot:2.5, thumb:1,lh:[1,0,0],rh:[1,0,0,0],hint:'Thumb + LH index + RH index'},
-  {name:'D',freq:587.33,tol:26,slot:3,   thumb:0,lh:[1,0,0],rh:[0,0,0,0],hint:'LH index only, no thumb'},
-  {name:'E',freq:659.25,tol:28,slot:3.5, thumb:0,lh:[0,0,0],rh:[0,0,0,0],hint:'All holes open, no thumb'}
+  {name:'C',freq:523.25,tol:24,slot:2.5, thumb:1,lh:[0,1,0],rh:[0,0,0,0],hint:'Thumb + LH middle only'},
+  {name:'D',freq:587.33,tol:26,slot:3,   thumb:0,lh:[0,1,0],rh:[0,0,0,0],hint:'LH middle only, no thumb'},
+  {name:'E',freq:659.25,tol:28,slot:3.5, thumb:0,lh:[0,1,1],rh:[0,0,0,0],hint:'LH middle + ring, no thumb'}
 ];
 const LEVEL_DESC=[
   'Easy — Staff + Note Name + Fingering chart',
